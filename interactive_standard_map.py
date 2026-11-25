@@ -2,63 +2,56 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, TextBox
-from matplotlib.colors import LogNorm
-from numba import njit
+from numba import njit, prange
 
 mpl.rcParams['toolbar'] = 'None'
 
 N_ITER = 500
 K_INIT = 0.971
-GRID_RES = 1024
-CHUNK_SIZE = 10_000_000
 FOUR_PI = 4 * np.pi
 TWO_PI = 2 * np.pi
+COLORS = [
+    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728',
+    '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
+    '#bcbd22', '#17becf',
+]
 
 
-@njit(cache=True)
-def compute_orbit_points(theta0, p0, K, N):
-    """Return arrays of (theta, p) for N iterations. Use for small N."""
-    thetas = np.empty(N)
-    ps = np.empty(N)
-    theta, p = theta0, p0
-    for i in range(N):
-        p = p + K * np.sin(theta)
-        theta = (theta + p) % FOUR_PI
-        p = ((p + np.pi) % TWO_PI) - np.pi
-        thetas[i] = theta
-        ps[i] = p
-    return thetas, ps
+@njit(parallel=True, cache=True)
+def compute_all_orbits(theta0s, p0s, K, N):
+    """Compute N iterations for all orbits in parallel.
 
+    Parameters
+    ----------
+    theta0s, p0s : 1-D arrays of length n_orbits
+    K : float
+    N : int
 
-@njit(cache=True)
-def compute_orbit_density(theta0, p0, K, N, grid, nx, ny):
-    """Iterate N steps, accumulate hits into grid, return final (theta, p)."""
-    theta, p = theta0, p0
-    inv_x = nx / FOUR_PI
-    inv_y = ny / TWO_PI
-    for i in range(N):
-        p = p + K * np.sin(theta)
-        theta = (theta + p) % FOUR_PI
-        p = ((p + np.pi) % TWO_PI) - np.pi
-        ix = int(theta * inv_x)
-        iy = int((p + np.pi) * inv_y)
-        if ix >= nx:
-            ix = nx - 1
-        if iy >= ny:
-            iy = ny - 1
-        grid[iy, ix] += 1
-    return theta, p
-
-
-DENSITY_THRESHOLD = 100_000
+    Returns
+    -------
+    all_thetas : (n_orbits, N) array
+    all_ps     : (n_orbits, N) array
+    """
+    n_orbits = theta0s.shape[0]
+    all_thetas = np.empty((n_orbits, N))
+    all_ps = np.empty((n_orbits, N))
+    for j in prange(n_orbits):
+        theta = theta0s[j]
+        p = p0s[j]
+        for i in range(N):
+            p = p + K * np.sin(theta)
+            theta = (theta + p) % FOUR_PI
+            p = ((p + np.pi) % TWO_PI) - np.pi
+            all_thetas[j, i] = theta
+            all_ps[j, i] = p
+    return all_thetas, all_ps
 
 
 class InteractiveMap:
     def __init__(self):
-        self.orbits = []
+        self.theta0s = []
+        self.p0s = []
         self.orbit_artists = []
-        self.density_artist = None
-        self.color_idx = 0
         self.K = K_INIT
         self.N = N_ITER
 
@@ -82,10 +75,10 @@ class InteractiveMap:
 
         self.fig.canvas.mpl_connect('button_press_event', self._on_click)
 
-        # Warm up numba JIT on first import
-        _g = np.zeros((4, 4), dtype=np.int64)
-        compute_orbit_density(0.0, 0.0, 0.5, 10, _g, 4, 4)
-        compute_orbit_points(0.0, 0.0, 0.5, 10)
+        # Warm up JIT
+        _t = np.array([0.0])
+        _p = np.array([0.0])
+        compute_all_orbits(_t, _p, 0.5, 10)
 
     def _setup_axes(self):
         self.ax.set_xlim(0, FOUR_PI)
@@ -100,87 +93,44 @@ class InteractiveMap:
         self.ax.grid(True, alpha=0.15)
 
     def _update_title(self):
-        if self.N >= 1_000_000_000:
-            n_str = f'{self.N / 1e9:.1f}B'
-        elif self.N >= 1_000_000:
-            n_str = f'{self.N / 1e6:.1f}M'
-        elif self.N >= 1_000:
-            n_str = f'{self.N / 1e3:.0f}K'
+        n = self.N
+        if n >= 1_000_000_000:
+            n_str = f'{n / 1e9:.1f}B'
+        elif n >= 1_000_000:
+            n_str = f'{n / 1e6:.1f}M'
+        elif n >= 1_000:
+            n_str = f'{n / 1e3:.0f}K'
         else:
-            n_str = str(self.N)
+            n_str = str(n)
         self.ax.set_title(
             f'Chirikov Standard Map   $K = {self.K:.3f}$   '
-            f'({n_str} iter, {len(self.orbits)} orbits)',
+            f'({n_str} iter, {len(self.theta0s)} orbits)',
             fontsize=13,
         )
-
-    def _use_density(self):
-        total = self.N * max(len(self.orbits), 1)
-        return total >= DENSITY_THRESHOLD
-
-    def _add_orbit(self, theta0, p0):
-        self.orbits.append((theta0, p0))
-        self._redraw_all()
 
     def _redraw_all(self):
         for artist in self.orbit_artists:
             artist.remove()
         self.orbit_artists.clear()
-        if self.density_artist is not None:
-            self.density_artist.remove()
-            self.density_artist = None
 
-        if not self.orbits:
+        if not self.theta0s:
             self._update_title()
             self.fig.canvas.draw_idle()
             return
 
-        if self._use_density():
-            self._draw_density()
-        else:
-            self._draw_scatter()
+        t0_arr = np.array(self.theta0s)
+        p0_arr = np.array(self.p0s)
+        all_thetas, all_ps = compute_all_orbits(t0_arr, p0_arr, self.K, self.N)
+
+        for i in range(len(self.theta0s)):
+            c = COLORS[i % len(COLORS)]
+            line, = self.ax.plot(
+                all_thetas[i], all_ps[i], 'o', color=c, ms=0.4, alpha=0.8,
+            )
+            self.orbit_artists.append(line)
 
         self._update_title()
         self.fig.canvas.draw_idle()
-
-    def _draw_scatter(self):
-        colors = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728',
-            '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
-            '#bcbd22', '#17becf',
-        ]
-        for i, (theta0, p0) in enumerate(self.orbits):
-            thetas, ps = compute_orbit_points(theta0, p0, self.K, self.N)
-            c = colors[i % len(colors)]
-            line, = self.ax.plot(thetas, ps, 'o', color=c, ms=0.4, alpha=0.8)
-            self.orbit_artists.append(line)
-
-    def _draw_density(self):
-        nx, ny = GRID_RES, GRID_RES
-        grid = np.zeros((ny, nx), dtype=np.int64)
-
-        for theta0, p0 in self.orbits:
-            remaining = self.N
-            theta, p = theta0, p0
-            while remaining > 0:
-                chunk = min(remaining, CHUNK_SIZE)
-                theta, p = compute_orbit_density(
-                    theta, p, self.K, chunk, grid, nx, ny,
-                )
-                remaining -= chunk
-
-        grid_float = grid.astype(np.float64)
-        grid_float[grid_float == 0] = np.nan
-
-        self.density_artist = self.ax.imshow(
-            grid_float,
-            extent=[0, FOUR_PI, -np.pi, np.pi],
-            origin='lower',
-            aspect='auto',
-            cmap='inferno',
-            norm=LogNorm(vmin=1, vmax=grid.max() or 1),
-            interpolation='bilinear',
-        )
 
     def _on_k_submit(self, text):
         try:
@@ -212,17 +162,16 @@ class InteractiveMap:
             return
         if event.button != 1:
             return
-        self._add_orbit(event.xdata, event.ydata)
+        self.theta0s.append(event.xdata)
+        self.p0s.append(event.ydata)
+        self._redraw_all()
 
     def _on_clear(self, event):
         for artist in self.orbit_artists:
             artist.remove()
         self.orbit_artists.clear()
-        if self.density_artist is not None:
-            self.density_artist.remove()
-            self.density_artist = None
-        self.orbits.clear()
-        self.color_idx = 0
+        self.theta0s.clear()
+        self.p0s.clear()
         self._update_title()
         self.fig.canvas.draw_idle()
 
