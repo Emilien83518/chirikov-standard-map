@@ -1,0 +1,738 @@
+<title>Chirikov Standard Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap">
+<style>
+  /* Layout: full-height app with side control panel on desktop, stacked on mobile */
+  :root {
+    --bg: #0c0e13;
+    --surface: #141720;
+    --surface-2: #1b1f2a;
+    --border: #2a2f3d;
+    --fg: #e8e6e1;
+    --fg-muted: #8a8d96;
+    --accent: #3987e5;
+    --accent-dim: #1c5cab;
+    --orbit-glow: rgba(57, 135, 229, 0.08);
+    --danger: #e34948;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f4f3f0;
+      --surface: #ffffff;
+      --surface-2: #eceae5;
+      --border: #d6d4ce;
+      --fg: #0b0b0b;
+      --fg-muted: #6b6a66;
+      --accent: #2a78d6;
+      --accent-dim: #1c5cab;
+      --orbit-glow: rgba(42, 120, 214, 0.06);
+      --danger: #d03b3b;
+      --series-1: #2a78d6;
+      --series-2: #eb6834;
+      --series-3: #1baf7a;
+      --series-4: #eda100;
+      --series-5: #e87ba4;
+      --series-6: #008300;
+      --series-7: #6250d6;
+      --series-8: #e34948;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f3f0;
+    --surface: #ffffff;
+    --surface-2: #eceae5;
+    --border: #d6d4ce;
+    --fg: #0b0b0b;
+    --fg-muted: #6b6a66;
+    --accent: #2a78d6;
+    --accent-dim: #1c5cab;
+    --orbit-glow: rgba(42, 120, 214, 0.06);
+    --danger: #d03b3b;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --series-6: #008300;
+    --series-7: #6250d6;
+    --series-8: #e34948;
+  }
+
+  * { box-sizing: border-box; margin: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Inter', system-ui, sans-serif;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  html { height: 100%; }
+
+  .app {
+    display: flex;
+    height: 100%;
+    gap: 0;
+  }
+
+  .canvas-panel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 16px 12px 0;
+  }
+
+  .canvas-wrap {
+    flex: 1;
+    position: relative;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .canvas-overlay {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    pointer-events: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-muted);
+    line-height: 1.6;
+  }
+
+  .canvas-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+    font-size: 12px;
+    color: var(--fg-muted);
+    opacity: 0.7;
+  }
+
+  .controls {
+    width: 280px;
+    min-width: 280px;
+    padding: 16px 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .ctrl-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ctrl-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+  }
+
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ctrl-row input[type="range"] {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ctrl-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 52px;
+    text-align: right;
+    color: var(--accent);
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--surface);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--surface);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+
+  .k-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--fg);
+    text-align: center;
+    padding: 8px 0;
+    line-height: 1;
+  }
+  .k-display span {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg-muted);
+    margin-right: 4px;
+  }
+
+  .ic-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ic-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .ic-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .ic-field label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-muted);
+  }
+
+  .ic-field input[type="number"] {
+    width: 100%;
+    padding: 6px 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    outline: none;
+  }
+  .ic-field input[type="number"]:focus {
+    border-color: var(--accent);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  button {
+    padding: 8px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--fg);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    flex: 1;
+  }
+  button:hover {
+    background: var(--border);
+  }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  button.primary:hover {
+    background: var(--accent-dim);
+    border-color: var(--accent-dim);
+  }
+  button.danger {
+    color: var(--danger);
+  }
+  button.danger:hover {
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
+  }
+
+  .orbit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  .orbit-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    background: var(--surface-2);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-muted);
+  }
+  .orbit-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .orbit-item .coords {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .orbit-remove {
+    background: none;
+    border: none;
+    color: var(--fg-muted);
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 14px;
+    line-height: 1;
+    flex: none;
+    min-width: 0;
+  }
+  .orbit-remove:hover {
+    color: var(--danger);
+    background: none;
+    border: none;
+  }
+
+  .footer-info {
+    font-size: 10px;
+    color: var(--fg-muted);
+    text-align: center;
+    opacity: 0.6;
+    padding-top: 4px;
+  }
+
+  .coord-display {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    pointer-events: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-muted);
+    text-align: right;
+    line-height: 1.6;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .coord-display.visible { opacity: 1; }
+
+  @media (max-width: 680px) {
+    .app {
+      flex-direction: column-reverse;
+      overflow-y: auto;
+    }
+    .controls {
+      width: auto;
+      min-width: 0;
+      padding: 12px 0 0 0;
+      flex-shrink: 0;
+    }
+    .canvas-panel {
+      padding: 0;
+      min-height: 50vh;
+    }
+    body { overflow: auto; }
+  }
+</style>
+
+<div class="app">
+  <div class="controls">
+    <div class="ctrl-section">
+      <div class="ctrl-label">Stochasticity parameter</div>
+      <div class="k-display"><span>K =</span><span id="k-big">0.971</span></div>
+      <div class="ctrl-row">
+        <input type="range" id="k-slider" min="0" max="6.5" step="0.001" value="0.971">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="setK(0)" style="flex:none;padding:5px 8px;font-size:11px;">0</button>
+        <button type="button" onclick="setK(0.5)" style="flex:none;padding:5px 8px;font-size:11px;">0.5</button>
+        <button type="button" onclick="setK(0.971)" style="flex:none;padding:5px 8px;font-size:11px;">0.971</button>
+        <button type="button" onclick="setK(1.5)" style="flex:none;padding:5px 8px;font-size:11px;">1.5</button>
+        <button type="button" onclick="setK(2.0)" style="flex:none;padding:5px 8px;font-size:11px;">2.0</button>
+        <button type="button" onclick="setK(4.0)" style="flex:none;padding:5px 8px;font-size:11px;">4.0</button>
+        <button type="button" onclick="setK(6.0)" style="flex:none;padding:5px 8px;font-size:11px;">6.0</button>
+      </div>
+    </div>
+
+    <div class="ctrl-section">
+      <div class="ctrl-label">Iterations per orbit</div>
+      <div class="ctrl-row">
+        <input type="range" id="iter-slider" min="50" max="2000" step="50" value="500">
+        <div class="ctrl-value" id="iter-val">500</div>
+      </div>
+    </div>
+
+    <div class="ctrl-section">
+      <div class="ctrl-label">Add orbit manually</div>
+      <div class="ic-group">
+        <div class="ic-input-row">
+          <div class="ic-field">
+            <label>&theta;</label>
+            <input type="number" id="ic-theta" step="0.1" value="3.14">
+          </div>
+          <div class="ic-field">
+            <label>p</label>
+            <input type="number" id="ic-p" step="0.1" value="0.5">
+          </div>
+        </div>
+        <button type="button" class="primary" onclick="addOrbitFromInputs()">Add orbit</button>
+      </div>
+    </div>
+
+    <div class="ctrl-section">
+      <div class="btn-row">
+        <button type="button" onclick="fillRandom()">Random fill</button>
+        <button type="button" class="danger" onclick="clearAll()">Clear all</button>
+      </div>
+    </div>
+
+    <div class="ctrl-section">
+      <div class="ctrl-label">Orbits</div>
+      <div class="orbit-list" id="orbit-list">
+        <div style="font-size:11px;color:var(--fg-muted);opacity:0.5;padding:8px 0;text-align:center;">Click the map to add orbits</div>
+      </div>
+    </div>
+
+    <div class="footer-info">
+      p<sub>n+1</sub> = p<sub>n</sub> + K sin(&theta;<sub>n</sub>)<br>
+      &theta;<sub>n+1</sub> = &theta;<sub>n</sub> + p<sub>n+1</sub> (mod 2&pi;)
+    </div>
+  </div>
+
+  <div class="canvas-panel">
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="map-canvas"></canvas>
+      <div class="canvas-overlay" id="canvas-overlay"></div>
+      <div class="coord-display" id="coord-display"></div>
+      <div class="canvas-hint" id="canvas-hint">Click anywhere to place an orbit</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = [
+  getComputedStyle(document.documentElement).getPropertyValue('--series-1').trim() || '#3987e5',
+  getComputedStyle(document.documentElement).getPropertyValue('--series-2').trim() || '#d95926',
+  getComputedStyle(document.documentElement).getPropertyValue('--series-3').trim() || '#199e70',
+  getComputedStyle(document.documentElement).getPropertyValue('--series-4').trim() || '#c98500',
+  getComputedStyle(document.documentElement).getPropertyValue('--series-5').trim() || '#d55181',
+  getComputedStyle(document.documentElement).getPropertyValue('--series-6').trim() || '#008300',
+  getComputedStyle(document.documentElement).getPropertyValue('--series-7').trim() || '#9085e9',
+  getComputedStyle(document.documentElement).getPropertyValue('--series-8').trim() || '#e66767',
+];
+
+const canvas = document.getElementById('map-canvas');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvas-wrap');
+const kSlider = document.getElementById('k-slider');
+const kBig = document.getElementById('k-big');
+const iterSlider = document.getElementById('iter-slider');
+const iterVal = document.getElementById('iter-val');
+const orbitListEl = document.getElementById('orbit-list');
+const coordDisplay = document.getElementById('coord-display');
+const canvasHint = document.getElementById('canvas-hint');
+
+let orbits = [];
+let colorIdx = 0;
+let dpr = window.devicePixelRatio || 1;
+
+const THETA_MIN = 0;
+const THETA_MAX = 2 * Math.PI;
+const P_MIN = -Math.PI;
+const P_MAX = Math.PI;
+
+function getK() { return parseFloat(kSlider.value); }
+function getIter() { return parseInt(iterSlider.value); }
+
+function resizeCanvas() {
+  const rect = wrap.getBoundingClientRect();
+  dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  redraw();
+}
+
+function thetaToX(theta) {
+  return ((theta - THETA_MIN) / (THETA_MAX - THETA_MIN)) * canvas.width;
+}
+function pToY(p) {
+  return ((P_MAX - p) / (P_MAX - P_MIN)) * canvas.height;
+}
+function xToTheta(x) {
+  return THETA_MIN + (x / canvas.width) * (THETA_MAX - THETA_MIN);
+}
+function yToP(y) {
+  return P_MAX - (y / canvas.height) * (P_MAX - P_MIN);
+}
+
+function mod(a, b) {
+  return ((a % b) + b) % b;
+}
+
+function computeOrbit(theta0, p0, K, N) {
+  const thetas = new Float64Array(N);
+  const ps = new Float64Array(N);
+  let theta = theta0;
+  let p = p0;
+  for (let i = 0; i < N; i++) {
+    p = p + K * Math.sin(theta);
+    theta = mod(theta + p, 2 * Math.PI);
+    p = mod(p + Math.PI, 2 * Math.PI) - Math.PI;
+    thetas[i] = theta;
+    ps[i] = p;
+  }
+  return { thetas, ps };
+}
+
+function drawGrid() {
+  const style = getComputedStyle(document.documentElement);
+  const gridColor = style.getPropertyValue('--border').trim() || '#2a2f3d';
+  const axisColor = style.getPropertyValue('--fg-muted').trim() || '#8a8d96';
+
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = dpr;
+
+  const thetaTicks = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2, 2 * Math.PI];
+  const thetaLabels = ['0', 'π/2', 'π', '3π/2', '2π'];
+  for (let i = 0; i < thetaTicks.length; i++) {
+    const x = thetaToX(thetaTicks[i]);
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+
+  const pTicks = [-Math.PI, -Math.PI / 2, 0, Math.PI / 2, Math.PI];
+  const pLabels = ['-π', '-π/2', '0', 'π/2', 'π'];
+  for (let i = 0; i < pTicks.length; i++) {
+    const y = pToY(pTicks[i]);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = axisColor;
+  ctx.font = `${11 * dpr}px 'JetBrains Mono', monospace`;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'center';
+  for (let i = 0; i < thetaTicks.length; i++) {
+    const x = thetaToX(thetaTicks[i]);
+    const nudge = i === 0 ? 8 * dpr : i === thetaTicks.length - 1 ? -8 * dpr : 0;
+    ctx.fillText(thetaLabels[i], x + nudge, canvas.height - 18 * dpr);
+  }
+
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  for (let i = 0; i < pTicks.length; i++) {
+    const y = pToY(pTicks[i]);
+    ctx.fillText(pLabels[i], 6 * dpr, y);
+  }
+
+  ctx.fillStyle = axisColor;
+  ctx.font = `${12 * dpr}px 'Inter', system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('θ', canvas.width / 2, canvas.height - 4 * dpr);
+  ctx.save();
+  ctx.translate(4 * dpr, canvas.height / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('p', 0, 0);
+  ctx.restore();
+}
+
+function drawOrbits() {
+  const K = getK();
+  const N = getIter();
+
+  for (const orb of orbits) {
+    const { thetas, ps } = computeOrbit(orb.theta, orb.p, K, N);
+    ctx.fillStyle = orb.color;
+    const r = Math.max(1, 1.2 * dpr);
+    for (let i = 0; i < N; i++) {
+      const x = thetaToX(thetas[i]);
+      const y = pToY(ps[i]);
+      ctx.fillRect(x - r / 2, y - r / 2, r, r);
+    }
+  }
+}
+
+function redraw() {
+  const style = getComputedStyle(document.documentElement);
+  const bg = style.getPropertyValue('--surface').trim() || '#141720';
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
+  drawOrbits();
+  updateOverlay();
+}
+
+function updateOverlay() {
+  const overlay = document.getElementById('canvas-overlay');
+  overlay.textContent = `K = ${getK().toFixed(3)}  |  ${orbits.length} orbit${orbits.length !== 1 ? 's' : ''}  |  ${getIter()} iter`;
+}
+
+function nextColor() {
+  const c = COLORS[colorIdx % COLORS.length];
+  colorIdx++;
+  return c;
+}
+
+function addOrbit(theta, p) {
+  const color = nextColor();
+  orbits.push({ theta, p, color });
+  renderOrbitList();
+  if (canvasHint) canvasHint.hidden = true;
+  redraw();
+}
+
+function removeOrbit(idx) {
+  orbits.splice(idx, 1);
+  renderOrbitList();
+  if (orbits.length === 0 && canvasHint) canvasHint.hidden = false;
+  redraw();
+}
+
+function renderOrbitList() {
+  if (orbits.length === 0) {
+    orbitListEl.innerHTML = '<div style="font-size:11px;color:var(--fg-muted);opacity:0.5;padding:8px 0;text-align:center;">Click the map to add orbits</div>';
+    return;
+  }
+  orbitListEl.innerHTML = orbits.map((o, i) => `
+    <div class="orbit-item">
+      <div class="orbit-dot" style="background:${o.color}"></div>
+      <span class="coords">θ=${o.theta.toFixed(3)} p=${o.p.toFixed(3)}</span>
+      <button class="orbit-remove" onclick="removeOrbit(${i})">&times;</button>
+    </div>
+  `).join('');
+}
+
+function addOrbitFromInputs() {
+  const theta = parseFloat(document.getElementById('ic-theta').value);
+  const p = parseFloat(document.getElementById('ic-p').value);
+  if (!isFinite(theta) || !isFinite(p)) return;
+  addOrbit(mod(theta, 2 * Math.PI), p);
+}
+
+function setK(val) {
+  kSlider.value = val;
+  kBig.textContent = val.toFixed(3);
+  redraw();
+}
+
+function fillRandom() {
+  for (let i = 0; i < 50; i++) {
+    const theta = Math.random() * 2 * Math.PI;
+    const p = (Math.random() - 0.5) * 2 * Math.PI;
+    addOrbit(theta, p);
+  }
+}
+
+function clearAll() {
+  orbits = [];
+  colorIdx = 0;
+  renderOrbitList();
+  if (canvasHint) canvasHint.hidden = false;
+  redraw();
+}
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * dpr;
+  const y = (e.clientY - rect.top) * dpr;
+  const theta = xToTheta(x);
+  const p = yToP(y);
+  addOrbit(theta, p);
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * dpr;
+  const y = (e.clientY - rect.top) * dpr;
+  const theta = xToTheta(x);
+  const p = yToP(y);
+  coordDisplay.textContent = `θ = ${theta.toFixed(3)}\np = ${p.toFixed(3)}`;
+  coordDisplay.classList.add('visible');
+});
+
+canvas.addEventListener('mouseleave', () => {
+  coordDisplay.classList.remove('visible');
+});
+
+kSlider.addEventListener('input', () => {
+  kBig.textContent = getK().toFixed(3);
+  redraw();
+});
+
+iterSlider.addEventListener('input', () => {
+  iterVal.textContent = getIter();
+  redraw();
+});
+
+window.addEventListener('resize', resizeCanvas);
+
+const observer = new ResizeObserver(resizeCanvas);
+observer.observe(wrap);
+
+resizeCanvas();
+</script>
