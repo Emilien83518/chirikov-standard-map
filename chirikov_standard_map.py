@@ -201,4 +201,5 @@ y2 = -y
 plt.plot(x,y,linewidth =lnwid)
 plt.plot(x2,y2,linewidth =lnwid)
 
+plt.title(f'Chirikov Standard Map   $K = {K}$', fontsize=13)
 plt.savefig('StandMap.png',dpi=900)
