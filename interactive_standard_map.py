@@ -1,6 +1,9 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, TextBox
+
+mpl.rcParams['toolbar'] = 'None'
 
 COLORS = [
     '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728',
@@ -51,12 +54,6 @@ class InteractiveMap:
         self.btn_clear = Button(ax_clear, 'Clear')
         self.btn_clear.on_clicked(self._on_clear)
 
-        self.fig.text(
-            0.5, 0.02,
-            'Click on the plot to add an orbit   |   '
-            'Type K or Iterations then press Enter to update',
-            ha='center', fontsize=9, color='gray',
-        )
 
         self.fig.canvas.mpl_connect('button_press_event', self._on_click)
 
