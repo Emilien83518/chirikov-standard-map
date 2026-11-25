@@ -2,11 +2,10 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from numpy import linalg as LA
 
 plt.close('all')
 
-eps = 0
+eps = 0.971
 
 np.random.seed(2)
 
@@ -49,160 +48,6 @@ plt.yticks(
 plt.xlabel(r'$\theta$', fontsize=12)
 plt.ylabel(r'$p$', fontsize=12)
 
-
 K = eps
-eps0 = 5e-7
-
-J = [[1,1+K],[1,1]]
-w, v = LA.eig(J)
-
-My = w[0]
-Vu = v[:,0]     # unstable manifold
-Vs = v[:,1]     # stable manifold
-
-# Plot the unstable manifold
-Hr = np.zeros(shape=(100,150))
-Ht = np.zeros(shape=(100,150))
-for eloop in range(0,100):
-
-    eps = eps0*eloop
-
-    roldu1 = eps*Vu[0]
-    thetoldu1 = eps*Vu[1]
-
-    Nloop = np.ceil(-6*np.log(eps0)/np.log(eloop+2))
-    flag = 1
-    cnt = 0
-
-    while flag==1 and cnt < Nloop:
-
-
-        ru1 = roldu1 + K*np.sin(thetoldu1)
-        thetau1 = thetoldu1 + ru1
-
-        roldu1 = ru1
-        thetoldu1 = thetau1
-
-        if thetau1 > 4*np.pi:
-            flag = 0
-
-        Hr[eloop,cnt] = roldu1
-        Ht[eloop,cnt] = thetoldu1 + 3*np.pi
-        cnt = cnt+1
-
-
-lnwid = 0.75
-
-x = Ht[0:99,12] - 2*np.pi
-x2 = 6*np.pi - x
-y = Hr[0:99,12]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
-del x,y
-x = Ht[5:39,15] - 2*np.pi
-x2 = 6*np.pi - x
-y = Hr[5:39,15]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
-del x,y
-x = Ht[12:69,16] - 2*np.pi
-x2 = 6*np.pi - x
-y = Hr[12:69,16]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
-del x,y
-x = Ht[15:89,17] - 2*np.pi
-x2 = 6*np.pi - x
-y = Hr[15:89,17]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
-del x,y
-x = Ht[30:99,18] - 2*np.pi
-x2 = 6*np.pi - x
-y = Hr[30:99,18]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
-# Plot the stable manifold
-del Hr, Ht
-Hr = np.zeros(shape=(100,150))
-Ht = np.zeros(shape=(100,150))
-#eps0 = 0.03
-for eloop in range(0,100):
-
-    eps = eps0*eloop
-
-    roldu1 = eps*Vs[0]
-    thetoldu1 = eps*Vs[1]
-
-    Nloop = np.ceil(-6*np.log(eps0)/np.log(eloop+2))
-    flag = 1
-    cnt = 0
-
-    while flag==1 and cnt < Nloop:
-
-
-        thetau1 = thetoldu1 - roldu1
-        ru1 = roldu1 - K*np.sin(thetau1)
-
-
-        roldu1 = ru1
-        thetoldu1 = thetau1
-
-        if thetau1 > 4*np.pi:
-            flag = 0
-
-        Hr[eloop,cnt] = roldu1
-        Ht[eloop,cnt] = thetoldu1
-        cnt = cnt+1
-
-x = Ht[0:79,12] + np.pi
-x2 = 6*np.pi - x
-y = Hr[0:79,12]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
-del x,y
-x = Ht[4:39,15] + np.pi
-x2 = 6*np.pi - x
-y = Hr[4:39,15]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
-del x,y
-x = Ht[12:69,16] + np.pi
-x2 =  6*np.pi - x
-y = Hr[12:69,16]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
-del x,y
-x = Ht[15:89,17] + np.pi
-x2 =  6*np.pi - x
-y = Hr[15:89,17]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
-del x,y
-x = Ht[30:99,18] + np.pi
-x2 =  6*np.pi - x
-y = Hr[30:99,18]
-y2 = -y
-plt.plot(x,y,linewidth =lnwid)
-plt.plot(x2,y2,linewidth =lnwid)
-
 plt.title(f'Chirikov Standard Map   $K = {K}$', fontsize=13)
 plt.savefig('StandMap.png',dpi=900)
