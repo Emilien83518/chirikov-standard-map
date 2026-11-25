@@ -21,7 +21,7 @@ def compute_orbit(theta0, p0, K, N):
     theta, p = theta0, p0
     for i in range(N):
         p = p + K * np.sin(theta)
-        theta = (theta + p) % (2 * np.pi)
+        theta = (theta + p) % (4 * np.pi)
         p = ((p + np.pi) % (2 * np.pi)) - np.pi
         thetas[i] = theta
         ps[i] = p
@@ -58,10 +58,10 @@ class InteractiveMap:
         self.fig.canvas.mpl_connect('button_press_event', self._on_click)
 
     def _setup_axes(self):
-        self.ax.set_xlim(0, 2 * np.pi)
+        self.ax.set_xlim(0, 4 * np.pi)
         self.ax.set_ylim(-np.pi, np.pi)
-        self.ax.set_xticks([0, np.pi / 2, np.pi, 3 * np.pi / 2, 2 * np.pi])
-        self.ax.set_xticklabels([r'$0$', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$'])
+        self.ax.set_xticks([0, np.pi, 2 * np.pi, 3 * np.pi, 4 * np.pi])
+        self.ax.set_xticklabels([r'$0$', r'$\pi$', r'$2\pi$', r'$3\pi$', r'$4\pi$'])
         self.ax.set_yticks([-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi])
         self.ax.set_yticklabels([r'$-\pi$', r'$-\pi/2$', r'$0$', r'$\pi/2$', r'$\pi$'])
         self.ax.set_xlabel(r'$\theta$', fontsize=13)
