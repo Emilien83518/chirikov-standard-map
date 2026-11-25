@@ -10,6 +10,7 @@ N_ITER = 500
 K_INIT = 0.971
 FOUR_PI = 4 * np.pi
 TWO_PI = 2 * np.pi
+CHUNK = 1_000_000
 COLORS = [
     '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728',
     '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
@@ -21,20 +22,15 @@ COLORS = [
 def compute_all_orbits(theta0s, p0s, K, N):
     """Compute N iterations for all orbits in parallel.
 
-    Parameters
-    ----------
-    theta0s, p0s : 1-D arrays of length n_orbits
-    K : float
-    N : int
-
-    Returns
-    -------
-    all_thetas : (n_orbits, N) array
-    all_ps     : (n_orbits, N) array
+    Returns (all_thetas, all_ps) each of shape (n_orbits, N),
+    plus (final_thetas, final_ps) of shape (n_orbits,) so the
+    caller can continue from where this chunk ended.
     """
     n_orbits = theta0s.shape[0]
     all_thetas = np.empty((n_orbits, N))
     all_ps = np.empty((n_orbits, N))
+    final_thetas = np.empty(n_orbits)
+    final_ps = np.empty(n_orbits)
     for j in prange(n_orbits):
         theta = theta0s[j]
         p = p0s[j]
@@ -44,7 +40,9 @@ def compute_all_orbits(theta0s, p0s, K, N):
             p = ((p + np.pi) % TWO_PI) - np.pi
             all_thetas[j, i] = theta
             all_ps[j, i] = p
-    return all_thetas, all_ps
+        final_thetas[j] = theta
+        final_ps[j] = p
+    return all_thetas, all_ps, final_thetas, final_ps
 
 
 class InteractiveMap:
@@ -75,9 +73,7 @@ class InteractiveMap:
 
         self.fig.canvas.mpl_connect('button_press_event', self._on_click)
 
-        # Warm up JIT
-        _t = np.array([0.0])
-        _p = np.array([0.0])
+        _t, _p = np.array([0.0]), np.array([0.0])
         compute_all_orbits(_t, _p, 0.5, 10)
 
     def _setup_axes(self):
@@ -118,16 +114,23 @@ class InteractiveMap:
             self.fig.canvas.draw_idle()
             return
 
-        t0_arr = np.array(self.theta0s)
-        p0_arr = np.array(self.p0s)
-        all_thetas, all_ps = compute_all_orbits(t0_arr, p0_arr, self.K, self.N)
+        n_orbits = len(self.theta0s)
+        cur_thetas = np.array(self.theta0s)
+        cur_ps = np.array(self.p0s)
+        remaining = self.N
 
-        for i in range(len(self.theta0s)):
-            c = COLORS[i % len(COLORS)]
-            line, = self.ax.plot(
-                all_thetas[i], all_ps[i], 'o', color=c, ms=0.4, alpha=0.8,
+        while remaining > 0:
+            chunk_n = min(remaining, CHUNK)
+            all_thetas, all_ps, cur_thetas, cur_ps = compute_all_orbits(
+                cur_thetas, cur_ps, self.K, chunk_n,
             )
-            self.orbit_artists.append(line)
+            for i in range(n_orbits):
+                c = COLORS[i % len(COLORS)]
+                line, = self.ax.plot(
+                    all_thetas[i], all_ps[i], 'o', color=c, ms=0.4, alpha=0.8,
+                )
+                self.orbit_artists.append(line)
+            remaining -= chunk_n
 
         self._update_title()
         self.fig.canvas.draw_idle()
