@@ -1,12 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Aug  2  2020
 
-"Introduction to Modern Dynamics" 2nd Edition (Oxford, 2019)
-
-@author: nolte
-"""
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -14,7 +6,7 @@ from numpy import linalg as LA
 
 plt.close('all')
 
-eps = 0.971
+eps = 0
 
 np.random.seed(2)
 
@@ -45,6 +37,17 @@ for eloop in range(0,100):
     plt.plot(np.real(thetaplot),np.real(rplot),'o',ms=.2)
     plt.xlim(xmin=np.pi,xmax=4*np.pi)
     plt.ylim(ymin=-2.5,ymax=2.5)
+
+plt.xticks(
+    [np.pi, 2*np.pi, 3*np.pi, 4*np.pi],
+    [r'$\pi$', r'$2\pi$', r'$3\pi$', r'$4\pi$']
+)
+plt.yticks(
+    [-np.pi/2, 0, np.pi/2],
+    [r'$-\pi/2$', r'$0$', r'$\pi/2$']
+)
+plt.xlabel(r'$\theta$', fontsize=12)
+plt.ylabel(r'$p$', fontsize=12)
 
 
 K = eps
